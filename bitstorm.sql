@@ -1,4 +1,4 @@
-CREATE DATABASE bitstorm;
+CREATE DATABASE bitstormxxx;
 
 CREATE TABLE peer (
   id int(10) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -24,5 +24,5 @@ CREATE TABLE peer_torrent (
 
 CREATE TABLE `torrent` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `hash` char(40) NOT NULL UNIQUE KEY COMMENT 'info_hash',
+  `hash` char(40) NOT NULL UNIQUE KEY COMMENT 'info_hash'
 );

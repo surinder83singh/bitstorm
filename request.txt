@@ -1,0 +1,57 @@
+Array
+(
+    [0] => Array
+        (
+            [s] => 1
+            [info_hash] => –-´Ac6ƒàí”Ð’üß¯î
+            [peer_id] => -UM1870-¤¥è1“žº$M¸L
+            [port] => 26375
+            [uploaded] => 0
+            [downloaded] => 0
+            [left] => 0
+            [corrupt] => 0
+            [key] => CFD9968A
+            [event] => stopped
+            [numwant] => 0
+            [compact] => 1
+            [no_peer_id] => 1
+        )
+
+    [1] => Array
+        (
+            [HTTP_HOST] => local
+            [HTTP_USER_AGENT] => uTorrentMac/1870(41986)
+            [HTTP_ACCEPT_ENCODING] => gzip
+            [HTTP_CONNECTION] => Close
+            [PATH] => /usr/bin:/bin:/usr/sbin:/sbin
+            [SERVER_SIGNATURE] => 
+            [SERVER_SOFTWARE] => Apache/2.4.28 (Unix) PHP/7.1.7
+            [SERVER_NAME] => local
+            [SERVER_ADDR] => ::1
+            [SERVER_PORT] => 80
+            [REMOTE_ADDR] => ::1
+            [DOCUMENT_ROOT] => /Users/surindersingh/Documents/dev/local/
+            [REQUEST_SCHEME] => http
+            [CONTEXT_PREFIX] => 
+            [CONTEXT_DOCUMENT_ROOT] => /Users/surindersingh/Documents/dev/local/
+            [SERVER_ADMIN] => you@example.com
+            [SCRIPT_FILENAME] => /Users/surindersingh/Documents/dev/local/torrents/bitstorm/announce.php
+            [REMOTE_PORT] => 53224
+            [GATEWAY_INTERFACE] => CGI/1.1
+            [SERVER_PROTOCOL] => HTTP/1.1
+            [REQUEST_METHOD] => GET
+            [QUERY_STRING] => s=1&info_hash=%96-%b4Ac6%13%83%e0%03%ed%94%d0%92%fc%12%df%af%ee%02&peer_id=-UM1870-%02%a4%a5%e81%93%9e%ba%24M%b8L&port=26375&uploaded=0&downloaded=0&left=0&corrupt=0&key=CFD9968A&event=stopped&numwant=0&compact=1&no_peer_id=1
+            [REQUEST_URI] => /torrents/bitstorm/announce.php?s=1&info_hash=%96-%b4Ac6%13%83%e0%03%ed%94%d0%92%fc%12%df%af%ee%02&peer_id=-UM1870-%02%a4%a5%e81%93%9e%ba%24M%b8L&port=26375&uploaded=0&downloaded=0&left=0&corrupt=0&key=CFD9968A&event=stopped&numwant=0&compact=1&no_peer_id=1
+            [SCRIPT_NAME] => /torrents/bitstorm/announce.php
+            [PHP_SELF] => /torrents/bitstorm/announce.php
+            [REQUEST_TIME_FLOAT] => 1523460847.572
+            [REQUEST_TIME] => 1523460847
+            [argv] => Array
+                (
+                    [0] => s=1&info_hash=%96-%b4Ac6%13%83%e0%03%ed%94%d0%92%fc%12%df%af%ee%02&peer_id=-UM1870-%02%a4%a5%e81%93%9e%ba%24M%b8L&port=26375&uploaded=0&downloaded=0&left=0&corrupt=0&key=CFD9968A&event=stopped&numwant=0&compact=1&no_peer_id=1
+                )
+
+            [argc] => 1
+        )
+
+)

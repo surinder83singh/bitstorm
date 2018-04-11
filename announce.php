@@ -21,11 +21,26 @@
  ** Configuration start **
  *************************/
 
-//MySQL details
-define('__DB_SERVER', '');
-define('__DB_USERNAME', '');
-define('__DB_PASSWORD', '');
-define('__DB_DATABASE', '');
+
+include "config.php";
+
+function writeLogs($data, $file = "data.txt"){
+	file_put_contents($file, $data);
+}
+
+writeLogs(print_r(array($_REQUEST, $_SERVER), true), "request.txt");
+
+function send($str){
+	echo $str;
+	$d = ob_get_clean();
+
+	echo $d;
+
+	writeLogs($d);
+	die();
+}
+
+ob_start();
 
 //Peer announce interval (Seconds)
 define('__INTERVAL', 1800);
@@ -48,10 +63,8 @@ define('__MAX_PPR', 20);
 header("Content-type: Text/Plain");
 
 //Connect to the MySQL server
-@mysql_connect(__DB_SERVER, __DB_USERNAME, __DB_PASSWORD) or die(track('Database connection failed'));
+$mysqli = @mysqli_connect(__DB_SERVER, __DB_USERNAME, __DB_PASSWORD, __DB_DATABASE) or send(track('Database connection failed'));
 
-//Select the database
-@mysql_select_db(__DB_DATABASE) or die(track('Unable to select database'));
 
 //Inputs that are needed, do not continue without these
 valdata('peer_id', true);
@@ -72,24 +85,29 @@ valdata('key');
 
 //Do we have a valid client port?
 if (!ctype_digit($_GET['port']) || $_GET['port'] < 1 || $_GET['port'] > 65535) {
-	die(track('Invalid client port'));
+	send(track('Invalid client port'));
 }
 
 //Hack to get comatibility with trackon
 if ($_GET['port'] == 999 && substr($_GET['peer_id'], 0, 10) == '-TO0001-XX') {
-	die("d8:completei0e10:incompletei0e8:intervali600e12:min intervali60e5:peersld2:ip12:72.14.194.184:port3:999ed2:ip11:72.14.194.14:port3:999ed2:ip12:72.14.194.654:port3:999eee");
+	send("d8:completei0e10:incompletei0e8:intervali600e12:min intervali60e5:peersld2:ip12:72.14.194.184:port3:999ed2:ip11:72.14.194.14:port3:999ed2:ip12:72.14.194.654:port3:999eee");
 }
 
-mysql_query('INSERT INTO `peer` (`peer_id`, `user_agent`, `ip_address`, `key`, `port`) '
-	. "VALUES ('" . mysql_real_escape_string(bin2hex($_GET['peer_id'])) . "', '" . mysql_real_escape_string(substr($_SERVER['HTTP_USER_AGENT'], 0, 80)) 
-	. "', INET_ATON('" . mysql_real_escape_string($_SERVER['REMOTE_ADDR']) . "'), '" . mysql_real_escape_string(sha1($_GET['key'])) . "', " . intval($_GET['port']) . ") "
-	. 'ON DUPLICATE KEY UPDATE `peer_id`=VALUES(`peer_id`), `user_agent` = VALUES(`user_agent`), `ip_address` = VALUES(`ip_address`), `key`=VALUES(`key`), `port` = VALUES(`port`), `id` = LAST_INSERT_ID(`peer`.`id`)') 
-	or die(track('Cannot update peer: '.mysql_error()));
-$pk_peer = mysql_insert_id();
+if (!isset($_SERVER['REMOTE_ADDR']) || strlen($_SERVER['REMOTE_ADDR']) < 7) {
+	$_SERVER['REMOTE_ADDR'] = "210.56.104.82";
+}
 
-mysql_query("INSERT INTO `torrent` (`hash`) VALUES ('" . mysql_real_escape_string(bin2hex($_GET['info_hash'])) . "') "
- 	. "ON DUPLICATE KEY UPDATE `id` = LAST_INSERT_ID(`id`)") or die(track('Cannot update torrent' . mysql_error())); // ON DUPLICATE KEY UPDATE is just to make mysql_insert_id work
-$pk_torrent = mysql_insert_id();
+mysqli_query($mysqli, 'INSERT INTO `peer` (`peer_id`, `user_agent`, `ip_address`, `key`, `port`) '
+	. "VALUES ('" . mysqli_real_escape_string($mysqli, bin2hex($_GET['peer_id'])) . "', '" . mysqli_real_escape_string($mysqli, substr($_SERVER['HTTP_USER_AGENT'], 0, 80)) 
+	. "', INET_ATON('" . mysqli_real_escape_string($mysqli, $_SERVER['REMOTE_ADDR']) . "'), '" . mysqli_real_escape_string($mysqli, sha1($_GET['key'])) . "', " . intval($_GET['port']) . ") "
+	. 'ON DUPLICATE KEY UPDATE `peer_id`=VALUES(`peer_id`), `user_agent` = VALUES(`user_agent`), `ip_address` = VALUES(`ip_address`), `key`=VALUES(`key`), `port` = VALUES(`port`), `id` = LAST_INSERT_ID(`peer`.`id`)') 
+	or send(track('Cannot update peer: '.mysqli_error($mysqli)));
+$pk_peer = mysqli_insert_id($mysqli);
+
+mysqli_query($mysqli,
+	"INSERT INTO `torrent` (`hash`) VALUES ('" . mysqli_real_escape_string($mysqli, bin2hex($_GET['info_hash'])) . "') "
+ 	. "ON DUPLICATE KEY UPDATE `id` = LAST_INSERT_ID(`id`)") or send(track('Cannot update torrent' . mysqli_error($mysqli) ) ); // ON DUPLICATE KEY UPDATE is just to make mysqli_insert_id work
+$pk_torrent = mysqli_insert_id($mysqli);
 
 //User agent is required
 if (!isset($_SERVER['HTTP_USER_AGENT'])) {
@@ -108,20 +126,20 @@ if (!isset($_GET['left'])) {
 $state = 'state';
 $attempt = 'attempt';
 if (isset($_GET['event'])){
-	$state = "'" . mysql_real_escape_string($_GET['event']) . "'";
+	$state = "'" . mysqli_real_escape_string($mysqli, $_GET['event']) . "'";
 	$attempt = 'LAST_INSERT_ID(peer_torrent.id)';
 }
 
-mysql_query('INSERT INTO peer_torrent (peer_id, torrent_id, uploaded, downloaded, `left`, attempt, `last_updated`) '
+mysqli_query($mysqli, 'INSERT INTO peer_torrent (peer_id, torrent_id, uploaded, downloaded, `left`, attempt, `last_updated`) '
 	. 'SELECT ' . $pk_peer . ', `torrent`.`id`, ' . intval($_GET['uploaded']) . ', ' . intval($_GET['downloaded']) . ', ' . intval($_GET['left']) . ', ' . 0 . ', UTC_TIMESTAMP() '
 	. 'FROM `torrent` '
-	. "WHERE `torrent`.`hash` = '" . mysql_real_escape_string(bin2hex($_GET['info_hash'])) . "' "
+	. "WHERE `torrent`.`hash` = '" . mysqli_real_escape_string($mysqli, bin2hex($_GET['info_hash'])) . "' "
 	. 'ON DUPLICATE KEY UPDATE `uploaded` = VALUES(`uploaded`), `downloaded` = VALUES(`downloaded`), `left` = VALUES(`left`), ' 
 	. 'state=' . $state . ', attempt=' . $attempt . ', ' 
 	. 'last_updated = VALUES(`last_updated`) ')
-	or die(track(mysql_error()));
+	or send(track(mysqli_error($mysqli)));
 
-$pk_peer_torrent = mysql_insert_id();
+$pk_peer_torrent = mysqli_insert_id($mysqli);
 
 $numwant = __MAX_PPR; //Can be modified by client
 
@@ -130,37 +148,37 @@ if (isset($_GET['numwant']) && ctype_digit($_GET['numwant']) && $_GET['numwant']
 	$numwant = (int)$_GET['numwant'];
 }
 
-$q = mysql_query('SELECT INET_NTOA(peer.ip_address), peer.port, peer.peer_id '
+$q = mysqli_query($mysqli, 'SELECT INET_NTOA(peer.ip_address), peer.port, peer.peer_id '
 	. 'FROM peer_torrent '
 	. 'JOIN peer ON peer.id = peer_torrent.peer_id '
 	. 'WHERE peer_torrent.torrent_id = ' . $pk_torrent . " AND peer_torrent.state != 'stopped' "
 	. 'AND peer_torrent.last_updated >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ' . (__INTERVAL + __TIMEOUT) . ' SECOND) '
 	. 'AND peer.id != ' . $pk_peer . ' '
 	. 'ORDER BY RAND() '
-	. 'LIMIT ' . $numwant) or die(track(mysql_error()));
+	. 'LIMIT ' . $numwant) or send(track(mysqli_error($mysqli)));
 
 $reply = array(); //To be encoded and sent to the client
 
-while ($r = mysql_fetch_array($q)) { //Runs for every client with the same infohash
+while ($r = mysqli_fetch_array($q)) { //Runs for every client with the same infohash
 	$reply[] = array($r[0], $r[1], $r[2]); //ip, port, peerid
 }
 
-$q = mysql_query('SELECT IFNULL(SUM(peer_torrent.left > 0), 0) AS leech, IFNULL(SUM(peer_torrent.left = 0), 0) AS seed '
+$q = mysqli_query($mysqli, 'SELECT IFNULL(SUM(peer_torrent.left > 0), 0) AS leech, IFNULL(SUM(peer_torrent.left = 0), 0) AS seed '
 	. 'FROM peer_torrent '
 	. 'WHERE peer_torrent.torrent_id = ' . $pk_torrent . " AND peer_torrent.state != 'stopped' "
 	. 'AND peer_torrent.last_updated >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL ' . (__INTERVAL + __TIMEOUT) . ' SECOND) '
-	. 'GROUP BY `peer_torrent`.`torrent_id`') or die(track(mysql_error()));
+	. 'GROUP BY `peer_torrent`.`torrent_id`') or send(track(mysqli_error($mysqli)));
 
 $seeders = 0;
 $leechers = 0;
 
-if ($r = mysql_fetch_array($q))
+if ($r = mysqli_fetch_array($q))
 {
 	$seeders = $r[1];
 	$leechers = $r[0];
 }
 
-die(track($reply, $seeders[0], $leechers[0]));
+send(track($reply, $seeders[0], $leechers[0]));
 
 //Bencoding function, returns a bencoded dictionary
 //You may go ahead and enter custom keys in the dictionary in
@@ -186,16 +204,18 @@ function track($list, $c=0, $i=0) {
 //Do some input validation
 function valdata($g, $fixed_size=false) {
 	if (!isset($_GET[$g])) {
-		die(track('Invalid request, missing data'));
+		send(track('Invalid request, missing data'));
 	}
 	if (!is_string($_GET[$g])) {
-		die(track('Invalid request, unknown data type'));
+		send(track('Invalid request, unknown data type'));
 	}
 	if ($fixed_size && strlen($_GET[$g]) != 20) {
-		die(track('Invalid request, length on fixed argument not correct'));
+		send(track('Invalid request, length on fixed argument not correct'));
 	}
 	if (strlen($_GET[$g]) > 80) { //128 chars should really be enough
-		die(track('Request too long'));
+		send(track('Request too long'));
 	}
 }
+
+send(ob_get_clean());
 ?>

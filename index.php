@@ -21,11 +21,12 @@
  ** Configuration start **
  *************************/
 
+//phpinfo();
+
+//die();
+
 //MySQL details
-define('__DB_SERVER', 'localhost');
-define('__DB_USERNAME', 'onesixu7_tracker');
-define('__DB_PASSWORD', 'dims4-alters');
-define('__DB_DATABASE', 'onesixu7_tracker');
+include "config.php";
 
 /***********************
  ** Configuration end **
@@ -47,20 +48,21 @@ table.db-table td {padding: 5px;border-left: 1px solid #ccc;border-top: 1px soli
 <?php
 
 //Connect to the MySQL server
-@mysql_connect(__DB_SERVER, __DB_USERNAME, __DB_PASSWORD) or die('Database connection failed');
+$mysqli = @mysqli_connect(__DB_SERVER, __DB_USERNAME, __DB_PASSWORD, __DB_DATABASE) or die('Database connection failed');
 
 //Select the database
-@mysql_select_db(__DB_DATABASE) or die('Unable to select database');
+//@mysql_select_db(__DB_DATABASE) or die('Unable to select database');
 
-$q = mysql_query('SELECT hash, SUM(uploaded) as uploaded, SUM(downloaded) as downloaded '
-		. 'FROM (SELECT torrent_id, uploaded, downloaded, MAX(attempt) FROM onesixu7_tracker.peer_torrent '
-		. 'GROUP BY torrent_id, peer_id) as X JOIN torrent ON X.torrent_id = torrent.id '
-		. 'GROUP BY torrent_id LIMIT 1000') or die(mysql_error());
+$q = mysqli_query($mysqli, 'SELECT torrent_id, SUM(uploaded) as uploaded, SUM(downloaded) as downloaded '
+		. 'FROM '
+		.' (SELECT torrent_id, uploaded, downloaded, MAX(attempt), peer_id FROM peer_torrent '
+		. 'GROUP BY torrent_id, peer_id) as X JOIN peer ON X.peer_id = peer.id '
+		. 'GROUP BY torrent_id LIMIT 1000') or die(mysqli_error($mysqli));
 
-if(mysql_num_rows($q)) {
+if(mysqli_num_rows($q)) {
 	echo '<table cellpadding="0" cellspacing="0" class="db-table">';
-	echo '<tr><th>Hash</th><th>Uploaded</th><th>Downloaded</th></tr>';
-	while($r = mysql_fetch_row($q)) {
+	echo '<tr><th>Torrent ID</th><th>Uploaded</th><th>Downloaded</th></tr>';
+	while($r = mysqli_fetch_row($q)) {
 		echo '<tr>';
 		echo '<td>',$r[0],'</td>';
 		echo '<td>',formatBytes($r[1]),'</td>';
